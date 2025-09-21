@@ -30,7 +30,7 @@ By creating a **lightweight AI accelerator** and attaching it to an open-source 
   - Enables AI inference controlled from Python scripts
 
 - **Demo Application**
-  - Run a tiny neural network inference (e.g., XOR classification)
+  - Run a tiny neural network inference 
   - MicroPython code initializes accelerator, executes computation, and prints results
 
 ---
