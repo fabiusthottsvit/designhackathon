@@ -1,75 +1,79 @@
-# OpenFrame Overview
+# Lightweight AI Accelerator for Microwatt (Caravel Integration)
 
-The OpenFrame Project provides an empty harness chip that differs significantly from the Caravel and Caravan designs. Unlike Caravel and Caravan, which include integrated SoCs and additional features, OpenFrame offers only the essential padframe, providing users with a clean slate for their custom designs.
+## Overview
+This project extends the [Microwatt](https://github.com/antonblanchard/microwatt) open-source PowerPC core with a **custom AI accelerator**.  
+The accelerator performs **matrix/vector operations** (dot-product, small matrix multiply, ReLU), which are key building blocks in neural networks.  
 
-<img width="256" alt="Screenshot 2024-06-24 at 12 53 39 PM" src="https://github.com/efabless/openframe_timer_example/assets/67271180/ff58b58b-b9c8-4d5e-b9bc-bf344355fa80">
+The design demonstrates **hardware/software co-design**:
+- **Hardware (VLSI):** Accelerator in Verilog/VHDL integrated as a memory-mapped peripheral.
+- **Software:** [MicroPython](https://micropython.org/) running on Microwatt controls the accelerator for AI workloads.
 
-## Key Characteristics of OpenFrame
+---
 
-1. **Minimalist Design:** 
-   - No integrated SoC or additional circuitry.
-   - Only includes the padframe, a power-on-reset circuit, and a digital ROM containing the 32-bit project ID.
+## Motivation
+AI workloads rely heavily on **multiply-accumulate (MAC) operations**. CPUs alone are inefficient for these tasks.  
+By creating a **lightweight AI accelerator** and attaching it to an open-source CPU, we show how domain-specific accelerators can deliver **higher performance per area** while staying within the open-source silicon ecosystem (Caravel + SKY130).
 
-2. **Padframe Compatibility:**
-   - The padframe design and pin placements match those of the Caravel and Caravan chips, ensuring compatibility and ease of transition between designs.
-   - Pin types are identical, with power and ground pins positioned similarly and the same power domains available.
-
-3. **Flexibility:**
-   - Provides full access to all GPIO controls.
-   - Maximizes the user project area, allowing for greater customization and integration of alternative SoCs or user-specific projects at the same hierarchy level.
-
-4. **Simplified I/O:**
-   - Pins that previously connected to CPU functions (e.g., flash controller interface, SPI interface, UART) are now repurposed as general-purpose I/O, offering flexibility for various applications.
-
-The OpenFrame harness is ideal for those looking to implement custom SoCs or integrate user projects without the constraints of an existing SoC.
+---
 
 ## Features
+- **AI Accelerator**
+  - Supports dot-product and 4×4 matrix multiplication
+  - Fixed-point arithmetic (configurable bit-width)
+  - ReLU activation
+  - Memory-mapped registers for data/control
+  - Handshaking interface (start/done)
 
-1. 44 configurable GPIOs.
-2. User area of approximately 15mm².
-3. Supports digital, analog, or mixed-signal designs.
+- **Integration with Microwatt**
+  - Connected via Wishbone bus
+  - Accessible from MicroPython using `machine.mem32[...]`
+  - Enables AI inference controlled from Python scripts
 
-# openframe_timer_example
+- **Demo Application**
+  - Run a tiny neural network inference (e.g., XOR classification)
+  - MicroPython code initializes accelerator, executes computation, and prints results
 
-This example implements a simple timer and connects it to the GPIOs.
+---
 
-## Installation and Setup
+## Implementation Plan
+### Primary Plan
+- Integrate **Microwatt + Accelerator** into the Caravel user area
+- Control accelerator directly from MicroPython running on Microwatt
 
-First, clone the repository:
+### Fallback Plan (in case of area/I/O constraints)
+- Implement **Accelerator Only** in the Caravel user area
+- Use **Caravel’s built-in management RISC-V** core to control the accelerator
+- Provide Microwatt + Accelerator integration in simulation for demonstration
 
-```bash
-git clone https://github.com/efabless/openframe_timer_example.git
-cd openframe_timer_example
-```
+---
 
-Then, download all dependencies:
+## Project Timeline
+- **Week 1**: Define accelerator spec, set up Microwatt + Caravel environment  
+- **Week 2**: Implement accelerator datapath (MAC/Matrix unit) + testbench  
+- **Week 3**: Integrate with Microwatt, verify memory-mapped I/O access  
+- **Week 4**: Run MicroPython demo, finalize results and documentation  
 
-```bash
-make setup
-```
+---
 
-## Hardening the Design
+## Deliverables
+- RTL code (Verilog/VHDL) for accelerator  
+- Testbenches with simulation waveforms  
+- Integrated Microwatt system with accelerator (simulation)  
+- MicroPython scripts demonstrating AI inference  
+- Caravel integration files (wrapper, I/O mapping)  
+- Final documentation (design + block diagrams)  
 
-In this example, we will harden the timer. You will need to harden your own design similarly.
+---
 
-```bash
-make user_proj_timer
-```
+## Skills & Tools
+- **Domain:** VLSI Design, Computer Architecture, Embedded Systems  
+- **Skills:** Verilog, MicroPython, Digital Design, RTL Verification, OpenLane (SKY130)  
+- **Tools:** ModelSim / GHDL / Vivado for sim, OpenLane for ASIC flow, Caravel platform  
 
-Once you have hardened your design, integrate it into the OpenFrame wrapper:
+---
 
-```bash
-make openframe_project_wrapper
-```
-
-## Important Notes
-
-1. **Connecting to Power:**
-   - Ensure your design is connected to power using the power pins on the wrapper.
-   - Use the `vccd1_connection` and `vssd1_connection` macros, which contain the necessary vias and nets for power connections.
-
-2. **Flattening the Design:**
-   - If you plan to flatten your design within the `openframe_project_wrapper`, do not buffer the analog pins using standard cells.
-
-3. **Running Custom Steps:**
-   - Execute the custom step in OpenLane that copies the power pins from the template DEF. If this step is skipped, the precheck will fail, and your design will not be powered.
+## Future Work
+- Expand accelerator with convolution/pooling units  
+- Optimize for larger models and external memory  
+- Prototype on FPGA for real-time testing  
+- Benchmark vs. software-only execution  
